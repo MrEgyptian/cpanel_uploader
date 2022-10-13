@@ -4,3 +4,4 @@ typing
 dataclass
 requests
 pprint
+colorama
