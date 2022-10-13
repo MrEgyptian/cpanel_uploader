@@ -1,3 +1,6 @@
 pysocks
-urllib3
+urllib
+typing
+dataclass
 requests
+pprint
