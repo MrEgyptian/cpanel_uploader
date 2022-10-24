@@ -1,2 +1,3 @@
 #Host:Port:user:pass
 jossjt1.websitewelcome.com:2083:fortest8471:ForTest#@ForTest#@
+azure.websitewelcome.com:2083:fortestxyzback:ForTest0123#@

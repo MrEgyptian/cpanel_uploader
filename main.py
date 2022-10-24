@@ -40,7 +40,7 @@ class CPanelAPI:
   if(r.status_code==200):
    pass
  def getFile(self,name):
-  f=open(name,'r')
+  f=open(name,'r',encoding='utf-8')
   content=f.read()
   f.close()
   return name,content
@@ -92,7 +92,7 @@ def rmComment(stringo):
  else:
   return str(stringo).split(':')
 def readList(list_name):
- f=open(list_name)
+ f=open(list_name,encoding='utf-8')
  lines=f.readlines()
  f.close()
  lines=map(rmComment,lines)
@@ -114,7 +114,7 @@ def get_file_input(disp_text,error_text='invalid file name : '):
  print(disp_text,end='')
  file=input()
  try:
-  x=open(file)
+  x=open(file,encoding='utf-8')
   x.close()
   return file
  except:
