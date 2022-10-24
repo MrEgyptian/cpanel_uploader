@@ -17,7 +17,7 @@ red=colorama.Fore.RED
 green=colorama.Fore.GREEN
 blue=colorama.Fore.BLUE
 yellow=colorama.Fore.YELLOW
-
+cyan=colorama.Fore.CYAN
 class invalidCreds(Exception):
  '''Invalid Username or Password'''
 class CPanelAPI:
@@ -46,8 +46,10 @@ class CPanelAPI:
   return name,content
  def upload(self,path,rootDir="public_html",dir=""):
   fileName,fileContent=self.getFile(path)
+  #Adding return Value to handle Exceptions ^^
   return self.uploadFile(fileName,fileContent,rootDir=rootDir,dir=dir)
  def delFile(self,filePath,rootDir='public_html',dir=''):
+  #After testing 'overwrite' parameter it wasn't stable so i used Fileop API
   params={
     "api.version":"2",
     "cpanel_jsonapi_module":"Fileman",
@@ -57,10 +59,11 @@ class CPanelAPI:
     }
   r2=self.session.post(self.url,auth=self.auth,data=params)
   res=r2.json()['cpanelresult']['event']['result']
+  #Returns :)
   if(res==1):
    return res
   else:
-   return r2.json()['cpanelresult']['error']
+   return r2.json()['cpanelresult']['error'] #The Expected errors are OS Errors
  def uploadFile(self,fileName,fileContent,rootDir="public_html",dir="ze"):
   uploadParams={
   "api.version":"2",
@@ -132,22 +135,33 @@ if __name__=='__main__':
   try:
    host,port,user,password=item
    print(f"{yellow}Connecting to {blue}https://{host}:{port}")
+   #API Login
    api=login(*item)
    if(api!=False):
+    #after Login
     print(f"{yellow}Uploading {blue}{uploadFile}")
     upload_res=api.upload(uploadFile)
     if('already exists' in upload_res):
+      # Upload Handler
       print(f'{red} The file is already exists.')
-      print(f'{yellow}Deleting the old file: {green}{uploadFile}')
+      #
+      print(f'{cyan}Deleting the old file: {green}{uploadFile}')
       delRes=api.delFile(uploadFile)
+      #Del Result
       if(delRes==1):
-       print(f'{green}File Deleted.')
+       print(f'{cyan}File Deleted.')
        print(f'{yellow}Uploading The File again..')
        upload_res=api.upload(uploadFile)
-       print(green,upload_res)
+       print(green,upload_res.replace(uploadFile,cyan+uploadFile+green))
+       #End Of code :)
       else:
-       print(red,delRes)
+       #If File Not Exists
+       pass
+      print(f'{green}GoodBye{yellow}.')
     else:
+       #
+       #Deleting file error (You can raise an exception here )
+       #
        print(f"Failed while deleting file error Code:{delRes}")
   except Exception as e:
    print(f'invalid syntax in {":".join(item)}',e)
