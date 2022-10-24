@@ -1,8 +1,5 @@
 pygments
 pysocks
-urllib
-typing
-dataclass
 requests
-pprint
 colorama
+configparser
