@@ -1,5 +1,5 @@
 #!/bin/env python3
-# Ver: 0.1
+# Ver: 0.1.1
 # By : @MrEgyptian
 # GitHub :Github.com/MrEgyptian
 # Website : https://www.MrEgyptian.codes
