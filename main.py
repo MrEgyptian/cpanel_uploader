@@ -7,7 +7,7 @@
 ########################################################################
 #
 from pygments import highlight, lexers, formatters
-import requests,json
+import requests,json,sys
 import colorama
 import base64
 from requests.auth import HTTPBasicAuth
@@ -46,10 +46,23 @@ class CPanelAPI:
   return name,content
  def upload(self,path,rootDir="public_html",dir=""):
   fileName,fileContent=self.getFile(path)
-  self.uploadFile(fileName,fileContent,rootDir=rootDir,dir=dir)
-  pass
- def uploadFile(self,fileName,fileContent,rootDir="public_html",dir="ze"):
+  return self.uploadFile(fileName,fileContent,rootDir=rootDir,dir=dir)
+ def delFile(self,filePath,rootDir='public_html',dir=''):
   params={
+    "api.version":"2",
+    "cpanel_jsonapi_module":"Fileman",
+    "cpanel_jsonapi_func":"fileop",
+    "op":'trash',
+    "sourcefiles":f"{rootDir}/{dir}/{filePath}"
+    }
+  r2=self.session.post(self.url,auth=self.auth,data=params)
+  res=r2.json()['cpanelresult']['event']['result']
+  if(res==1):
+   return res
+  else:
+   return r2.json()['cpanelresult']['error']
+ def uploadFile(self,fileName,fileContent,rootDir="public_html",dir="ze"):
+  uploadParams={
   "api.version":"2",
   "cpanel_jsonapi_module":"Fileman",
   "cpanel_jsonapi_func":"uploadfiles",
@@ -59,7 +72,7 @@ class CPanelAPI:
   "file":[fileName,fileContent]
   }
 
-  r=self.session.post(self.url,auth=self.auth,data=params,files=f)
+  r=self.session.post(self.url,auth=self.auth,data=uploadParams,files=f)
   status=r.status_code
   obj=r.json()['cpanelresult']['data']
   json_str=json.dumps(obj,indent=4)
@@ -68,7 +81,7 @@ class CPanelAPI:
     formatters.TerminalFormatter()
     )
   print(green,r.status_code,hi)
-  pass
+  return obj[0]['uploads'][0]['reason']
 def rmComment(stringo):
  stringo=str(stringo).strip('\n')
  if(str(stringo).startswith('#')):
@@ -122,9 +135,24 @@ if __name__=='__main__':
    api=login(*item)
    if(api!=False):
     print(f"{yellow}Uploading {blue}{uploadFile}")
-    api.upload(uploadFile)
+    upload_res=api.upload(uploadFile)
+    if('already exists' in upload_res):
+      print(f'{red} The file is already exists.')
+      print(f'{yellow}Deleting the old file: {green}{uploadFile}')
+      delRes=api.delFile(uploadFile)
+      if(delRes==1):
+       print(f'{green}File Deleted.')
+       print(f'{yellow}Uploading The File again..')
+       upload_res=api.upload(uploadFile)
+       print(green,upload_res)
+      else:
+       print(red,delRes)
+    else:
+       print(f"Failed while deleting file error Code:{delRes}")
   except Exception as e:
    print(f'invalid syntax in {":".join(item)}',e)
+   exc_type, exc_obj, exc_tb = sys.exc_info()
+   print(exc_tb.tb_lineno)
   #api=CPanelAPI()
  #api.uploadFile('kaka.html',"<center>PePe</center>")
 
