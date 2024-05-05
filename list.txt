@@ -1,3 +1,4 @@
-#Host:Port:user:pass
-jossjt1.websitewelcome.com:2083:fortest8471:ForTest#@ForTest#@
-azure.websitewelcome.com:2083:fortestxyzback:ForTest0123#@
+#host:port|user|pass
+http://93.89.225.234:2082|wqrvassm|f!3V5{6P
+https://server1.novemyazilim.com:2083|turklink|~X%)pT??W&J)
+https://www.corporationbv.com:2083|corporatio|X%bWLSH;mIR9

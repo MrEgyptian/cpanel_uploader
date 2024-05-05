@@ -9,7 +9,7 @@
 from pygments import highlight, lexers, formatters
 import requests,json,sys
 import colorama
-import base64
+import base64,re
 from requests.auth import HTTPBasicAuth
 from configparser import ConfigParser as cp
 parser=cp()
@@ -31,8 +31,9 @@ class CPanelAPI:
   "cpanel_jsonapi_module":"Fileman",
   "cpanel_jsonapi_func":"listfiles"
   }
-  self.url = f"https://{hostname}:{port}/json-api/cpanel";
+  self.url = f"{hostname}:{port}/json-api/cpanel";
   self.session=requests.Session()
+  self.user=username
   self.auth=HTTPBasicAuth(username,password)
   r=self.session.get(self.url,auth=self.auth,json=params)
   if(r.status_code==403):
@@ -64,6 +65,15 @@ class CPanelAPI:
    return res
   else:
    return r2.json()['cpanelresult']['error'] #The Expected errors are OS Errors
+ def getDomains(self,):
+  params={
+    "cpanel_jsonapi_module":"DomainLookup",
+    "cpanel_jsonapi_func":"getbasedomains",
+    "api.version":"2",
+  }
+  #domain_url=self.url.replace('cpanel','get_domain_info')
+  r=self.session.post(self.url,auth=self.auth,data=params)
+  return r.json()['cpanelresult']['data']
  def uploadFile(self,fileName,fileContent,rootDir="public_html",dir="ze"):
   uploadParams={
   "api.version":"2",
@@ -90,7 +100,8 @@ def rmComment(stringo):
  if(str(stringo).startswith('#')):
   pass
  else:
-  return str(stringo).split(':')
+  #return str(stringo).split(':')
+  return str(stringo)
 def readList(list_name):
  f=open(list_name,encoding='utf-8')
  lines=f.readlines()
@@ -103,12 +114,21 @@ def login(host,port,user,password):
    global green,blue,red,yellow
    try:
     print(f"{yellow}Logging in as {blue}{user}")
+    #host=host.replace('http://','')
+    #host=host.replace('https://','')
     api=CPanelAPI(hostname=host,port=int(port),username=user,password=password)
     print(f'{green}Logged in Successfully')
     return api
    except Exception as e:
-    print('{red} Error While Logging in ',e)
+    print(f'{red} Error While Logging in ',e)
    return False
+
+def save_domain(domain,domain_list='domains.txt'):
+ f=open(domain_list,'a+',encoding='utf-8')
+ f.write(domain)
+ f.close()
+ return True
+
 def get_file_input(disp_text,error_text='invalid file name : '):
  global red
  print(disp_text,end='')
@@ -127,20 +147,49 @@ if __name__=='__main__':
  # ForTest#@ForTest#@
  #
  colorama.init()
- listFile=get_file_input(f'{green}CPanels >{yellow} ')
- uploadFile=get_file_input(f'{green}UPLOAD FILE >{yellow} ')
- cpanel_list=readList(listFile) 
+ parser.read('config.ini')
+ credsPattern = parser.get('lists','pattern')
+ hostPattern='https?://[a-zA-Z0-9_.]+'
+ portPattern='\d+'
+ userPattern='[a-zA-Z0-9_.]+'
+ passPattern='.*'
+ credsRegex=credsPattern.replace('host',f'({hostPattern})')
+ credsRegex=credsRegex.replace('|',r'\|')
+ credsRegex=credsRegex.replace('port',f'({portPattern})')
+ credsRegex=credsRegex.replace('user',f'({userPattern})')
+ credsRegex=credsRegex.replace('password',f'({passPattern})')
+ listPrompt=parser.getboolean('lists','list_prompt')
+ if(listPrompt):
+  listFile=get_file_input(f'{green}CPanels >{yellow} ')
+  uploadFile=get_file_input(f'{green}UPLOAD FILE >{yellow} ')
+  domainsFile=get_file_input(f'{green}output >{yellow} ')
+ else:
+  listFile=parser.get('list_prompt','list_file')
+  uploadFile=parser.get('list_prompt','upload_file')
+  domainsFile=parser.get('list_prompt','domains_file')
+ cpanel_list=readList(listFile)
+ #print(cpanel_list)
  print(f'Reading list {blue}[{green}{listFile}{blue}]')
  for item in cpanel_list:
   try:
-   host,port,user,password=item
-   print(f"{yellow}Connecting to {blue}https://{host}:{port}")
+   match=re.match(credsRegex,item)
+   #print(item)
+   #print(credsRegex)
+   host=match.group(1)
+   port=match.group(2)
+   user=match.group(3)
+   password=match.group(4)
+   #host,port,user,password=item
+   print(f"{yellow}Connecting to {blue}{host}:{port}")
    #API Login
-   api=login(*item)
+   api=login(host,port,user,password)
    if(api!=False):
     #after Login
+    domains=api.getDomains()
+    domain=domains[0]['domain']
     print(f"{yellow}Uploading {blue}{uploadFile}")
     upload_res=api.upload(uploadFile)
+    save_domain("http://"+domain+'/'+uploadFile,domainsFile)
     if('already exists' in upload_res):
       # Upload Handler
       print(f'{red} The file is already exists.')
@@ -163,8 +212,9 @@ if __name__=='__main__':
        #Deleting file error (You can raise an exception here )
        #
        print(f"Failed while deleting file error Code:{delRes}")
+    print(f'{green}Uploaded to',yellow,"http://"+domain+'/'+uploadFile)
   except Exception as e:
-   print(f'invalid syntax in {":".join(item)}',e)
+   #print(f'invalid syntax in {":".join(item)}',e)
    exc_type, exc_obj, exc_tb = sys.exc_info()
    print(exc_tb.tb_lineno)
   #api=CPanelAPI()
