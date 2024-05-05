@@ -189,7 +189,7 @@ if __name__=='__main__':
     domain=domains[0]['domain']
     print(f"{yellow}Uploading {blue}{uploadFile}")
     upload_res=api.upload(uploadFile)
-    save_domain("http://"+domain+'/'+uploadFile,domainsFile)
+    save_domain("http://"+domain+'/'+uploadFile+'\n',domainsFile)
     if('already exists' in upload_res):
       # Upload Handler
       print(f'{red} The file is already exists.')
